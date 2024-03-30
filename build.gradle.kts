@@ -23,26 +23,22 @@ repositories {
 }
 
 dependencies {
+    configurations.implementation.get().isCanBeResolved = true
+
     val loaderVersion: String by project
     val mixinVersion: String by project
     val mixinExtrasVersion: String by project
 
-    implementation(group = "net.fabricmc", name = "fabric-loader", version = loaderVersion)
+    shade(group = "net.fabricmc", name = "fabric-loader", version = loaderVersion)
 
-    implementation(group = "net.fabricmc", name = "access-widener", version = "2.1.0")
+    shade(group = "net.fabricmc", name = "access-widener", version = "2.1.0")
     implementation(group = "net.fabricmc", name = "sponge-mixin", version = mixinVersion) {
         exclude(module = "launchwrapper")
         exclude(module = "guava")
         exclude(module = "gson")
     }
-    implementation(group = "com.google.guava", name = "guava", version = "33.1.0-jre")
-    implementation(group = "com.google.code.gson", name = "gson", version = "2.10.1")
-
-    listOf("asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util").forEach {
-        implementation(group = "org.ow2.asm", name = it, version = "9.6")
-    }
-
-    implementation(group = "io.github.llamalad7", name = "mixinextras-fabric", version = mixinExtrasVersion)
+    shade(group = "com.google.guava", name = "guava", version = "33.1.0-jre")
+    shade(group = "com.google.code.gson", name = "gson", version = "2.10.1")
 }
 
 java {
@@ -65,11 +61,13 @@ tasks {
         if (!libraryDir.exists()) {
             libraryDir.mkdirs()
         }
-        configurations.runtimeClasspath.get()
-            .map { Pair(it, File(libraryDir, it.name)) }
-            .forEach { (file, dest) -> file.copyTo(dest, true) }
 
-        println(configurations.runtimeClasspath.get().joinToString(";") { "lib/" + it.name })
+        val deps = configurations.implementation.get()
+            .filter { shade.all { shaded -> shaded.path != it.path } }
+
+        deps.map { Pair(it, File(libraryDir, it.name)) }.forEach { (file, dest) -> file.copyTo(dest, true) }
+
+        println(deps.joinToString(";") { "lib/" + it.name })
         dependsOn(shadowJar)
     }
     named<ShadowJar>("shadowJar") {
