@@ -4,6 +4,7 @@ import io.github.yuko1101.provider.patch.LunarCoreEntrypointPatch;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
+import net.fabricmc.loader.impl.game.LibClassifier;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
@@ -12,18 +13,19 @@ import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 public class LunarCoreGameProvider implements GameProvider {
 
-
-    private static final String[] ENTRYPOINTS = new String[]{"emu.lunarcore.LunarCore"};
+    protected static final String[] ENTRYPOINTS = new String[]{"emu.lunarcore.LunarCore"};
     private static final Set<String> SENSITIVE_ARGS = new HashSet<>(List.of());
 
     private Arguments arguments;
@@ -33,6 +35,7 @@ public class LunarCoreGameProvider implements GameProvider {
     private Path gameJar;
     private boolean development = false;
     private final List<Path> miscGameLibraries = new ArrayList<>();
+    private Collection<Path> validParentClassPath;
     private static final StringVersion gameVersion = new StringVersion("1.2.0");
 
     private static final GameTransformer TRANSFORMER = new GameTransformer(new LunarCoreEntrypointPatch());
@@ -71,7 +74,6 @@ public class LunarCoreGameProvider implements GameProvider {
                         .setContact(new ContactInformationImpl(lunarCoreInfo))
                         .setDescription("A game server reimplementation for a certain turn-based anime game");
 
-
         return Collections.singletonList(new BuiltinMod(Collections.singletonList(gameJar), metadata.build()));
     }
 
@@ -108,32 +110,38 @@ public class LunarCoreGameProvider implements GameProvider {
         this.arguments = new Arguments();
         arguments.parse(args);
 
-        HashMap<Path, ZipFile> zipFiles = new HashMap<>();
-
         if (Objects.equals(System.getProperty(SystemProperties.DEVELOPMENT), "true")) {
             development = true;
         }
 
+        Path commonJarPath = GameProviderHelper.getCommonGameJar();
+        Path envJarPath = GameProviderHelper.getEnvGameJar(launcher.getEnvironmentType());
         try {
-            String gameJarProperty = System.getProperty(SystemProperties.GAME_JAR_PATH);
-            if (gameJarProperty == null) {
-                gameJarProperty = "./LunarCore.jar";
+            LibClassifier<GameLibraries> classifier = new LibClassifier<>(GameLibraries.class, launcher.getEnvironmentType(), this);
+            GameLibraries gameLib = GameLibraries.LUNAR_CORE_GAME_PROVIDER;
+
+            if (commonJarPath != null) {
+                classifier.process(commonJarPath);
+            } else if (envJarPath != null) {
+                classifier.process(envJarPath);
+            } else {
+                // You can pass the path to the game jar via the classpath
+                // when you launch Knot, but for simple cases a hard-coded list is fine.
+                Optional<Path> path = Stream.of(
+                        Path.of("./LunarCore.jar"),
+                        Path.of("./lunarcore.jar")
+                ).filter(Files::exists).findFirst();
+                if (path.isPresent()) {
+                    classifier.process(path.get());
+                }
             }
+            classifier.process(launcher.getClassPath());
 
-            Path path = Paths.get(gameJarProperty);
-            if (!Files.exists(path)) {
-                throw new RuntimeException("Game jar configured through " + SystemProperties.GAME_JAR_PATH + " system property doesn't exist");
-            }
+            entrypoint = classifier.getClassName(gameLib);
+            gameJar = classifier.getOrigin(gameLib);
 
-            GameProviderHelper.FindResult result = GameProviderHelper.findFirst(Collections.singletonList(path), zipFiles, true, ENTRYPOINTS);
-
-            if (result == null) {
-                return false;
-            }
-
-            entrypoint = result.name;
-            gameJar = result.path;
-
+            miscGameLibraries.addAll(classifier.getUnmatchedOrigins());
+            validParentClassPath = classifier.getSystemLibraries();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -145,6 +153,7 @@ public class LunarCoreGameProvider implements GameProvider {
 
     @Override
     public void initialize(FabricLauncher launcher) {
+        launcher.setValidParentClassPath(validParentClassPath);
         TRANSFORMER.locateEntrypoints(launcher, Collections.singletonList(gameJar));
     }
 
@@ -159,6 +168,14 @@ public class LunarCoreGameProvider implements GameProvider {
 
         for (Path lib : miscGameLibraries) {
             launcher.addToClassPath(lib);
+        }
+        System.out.println("Added " + miscGameLibraries.size() + " libraries to the classpath");
+        try {
+            Class<?> iMixinConfigPluginClass = Class.forName("org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin");
+            System.out.println("Found IMixinConfigPlugin class");
+            System.out.println("Loader: " + iMixinConfigPluginClass.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
