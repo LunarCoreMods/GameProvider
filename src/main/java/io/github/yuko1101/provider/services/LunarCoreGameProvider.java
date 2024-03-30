@@ -77,7 +77,7 @@ public class LunarCoreGameProvider implements GameProvider {
 
     @Override
     public String getEntrypoint() {
-        return null;
+        return entrypoint;
     }
 
     @Override

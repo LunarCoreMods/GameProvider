@@ -22,7 +22,7 @@ public class LunarCoreEntrypointPatch extends GamePatch {
         String entrypoint = launcher.getEntrypoint();
 
         /* Check to see if we got only the entrypoint we want, as you can have multiple entrypoints set.*/
-        if (entrypoint == null || !entrypoint.startsWith("emu.lunarcore.")) {
+        if (!entrypoint.startsWith("emu.lunarcore.")) {
             return;
         }
 
