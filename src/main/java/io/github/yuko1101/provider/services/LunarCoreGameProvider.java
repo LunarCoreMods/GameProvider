@@ -13,7 +13,6 @@ import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -21,7 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
-import java.util.zip.ZipFile;
 
 public class LunarCoreGameProvider implements GameProvider {
 
@@ -36,7 +34,7 @@ public class LunarCoreGameProvider implements GameProvider {
     private boolean development = false;
     private final List<Path> miscGameLibraries = new ArrayList<>();
     private Collection<Path> validParentClassPath;
-    private static final StringVersion gameVersion = new StringVersion("1.2.0");
+    private static StringVersion gameVersion;
 
     private static final GameTransformer TRANSFORMER = new GameTransformer(new LunarCoreEntrypointPatch());
 
@@ -52,6 +50,17 @@ public class LunarCoreGameProvider implements GameProvider {
 
     @Override
     public String getRawGameVersion() {
+        if (gameVersion == null) {
+            try {
+                Class<?> buildConfig = Class.forName("emu.lunarcore.BuildConfig", true, getClass().getClassLoader());
+                var field = buildConfig.getDeclaredField("VERSION");
+                field.setAccessible(true);
+                String version = (String) field.get(null);
+                gameVersion = new StringVersion(version);
+            } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return gameVersion.getFriendlyString();
     }
 
@@ -168,14 +177,6 @@ public class LunarCoreGameProvider implements GameProvider {
 
         for (Path lib : miscGameLibraries) {
             launcher.addToClassPath(lib);
-        }
-        System.out.println("Added " + miscGameLibraries.size() + " libraries to the classpath");
-        try {
-            Class<?> iMixinConfigPluginClass = Class.forName("org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin");
-            System.out.println("Found IMixinConfigPlugin class");
-            System.out.println("Loader: " + iMixinConfigPluginClass.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
