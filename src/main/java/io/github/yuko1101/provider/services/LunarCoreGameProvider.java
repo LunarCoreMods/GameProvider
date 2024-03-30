@@ -231,7 +231,7 @@ public class LunarCoreGameProvider implements GameProvider {
 
         launchDir = Path.of(arguments.get("gameDir"));
         System.out.println("Launch directory is " + launchDir);
-        libDir = launchDir.resolve(Path.of("./lib"));
+        libDir = launchDir.resolve(Path.of("./libraries"));
     }
 
     private static Path getLaunchDirectory(Arguments arguments) {

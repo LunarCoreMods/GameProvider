@@ -47,6 +47,8 @@ java {
 
 tasks {
     named<Jar>("jar") {
+        dependsOn(shadowJar)
+
         manifest {
             attributes(
                 mapOf(
@@ -57,7 +59,10 @@ tasks {
                 )
             )
         }
-        val libraryDir = File("${layout.buildDirectory.get().asFile.path}/libs/lib")
+
+        val outputDir = layout.buildDirectory.dir("libs").get().asFile
+        val libraryDir = File(outputDir, "libraries")
+
         if (!libraryDir.exists()) {
             libraryDir.mkdirs()
         }
@@ -67,10 +72,15 @@ tasks {
 
         deps.map { Pair(it, File(libraryDir, it.name)) }.forEach { (file, dest) -> file.copyTo(dest, true) }
 
-        println(deps.joinToString(";") { "lib/" + it.name })
-        dependsOn(shadowJar)
+        val cp = "LunarCore.jar;GameProvider.jar;${deps.joinToString(";") { "libraries/" + it.name }}"
+
+        val argsFile = File(outputDir, "args.txt")
+        argsFile.writeText("-cp $cp\n${project.group}.provider.Main")
     }
     named<ShadowJar>("shadowJar") {
         configurations = listOf(shade)
+        archiveBaseName.set("GameProvider")
+        archiveVersion.set("")
+        archiveClassifier.set("")
     }
 }
