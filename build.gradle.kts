@@ -12,7 +12,7 @@ version = properties["version"]!!
 lateinit var shade: Configuration
 
 configurations {
-    register("implementationAppending") {
+    register("shade") {
         shade = this
         configurations.implementation.get().extendsFrom(this)
     }
