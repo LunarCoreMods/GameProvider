@@ -49,6 +49,7 @@ java {
 tasks {
     named<Jar>("jar") {
         dependsOn(shadowJar)
+        dependsOn("generateOtherFiles")
 
         manifest {
             attributes(
@@ -60,7 +61,14 @@ tasks {
                 )
             )
         }
-
+    }
+    named<ShadowJar>("shadowJar") {
+        configurations = listOf(shade)
+        archiveBaseName.set("GameProvider")
+        archiveVersion.set("")
+        archiveClassifier.set("")
+    }
+    register("generateOtherFiles") {
         val outputDir = layout.buildDirectory.dir("libs").get().asFile
         val libraryDir = File(outputDir, "libraries")
 
@@ -78,12 +86,6 @@ tasks {
         val argsFile = File(outputDir, "args.txt")
         argsFile.writeText("-cp $cp\n${project.group}.provider.Main")
     }
-    named<ShadowJar>("shadowJar") {
-        configurations = listOf(shade)
-        archiveBaseName.set("GameProvider")
-        archiveVersion.set("")
-        archiveClassifier.set("")
-    }
 }
 
 publishing {
@@ -93,7 +95,7 @@ publishing {
             artifactId = project.name
             version = project.version.toString()
 
-            from(components["java"])
+            artifact(tasks.named<ShadowJar>("shadowJar").get())
         }
     }
 }
