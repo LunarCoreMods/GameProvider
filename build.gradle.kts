@@ -6,17 +6,12 @@ plugins {
     `maven-publish`
 }
 
-group = properties["group"]!!
+group = properties["groupId"]!!
 version = properties["version"]!!
 
-lateinit var shade: Configuration
-
-configurations {
-    register("shade") {
-        shade = this
-        configurations.implementation.get().extendsFrom(this)
-    }
-}
+val shade: Configuration = configurations.register("shade") {
+    configurations.implementation.get().extendsFrom(this)
+}.get()
 
 repositories {
     mavenCentral()
@@ -57,7 +52,7 @@ tasks {
                     "Class-Path" to configurations.runtimeClasspath.get().joinToString(" ") { it.getName() },
                     "Specification-Version" to 8.0,
                     "Multi-Release" to true,
-                    "Main-Class" to "${project.properties["group"]!!}.provider.Main"
+                    "Main-Class" to "${project.properties["groupId"]!!}.provider.Main"
                 )
             )
         }
