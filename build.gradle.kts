@@ -57,7 +57,7 @@ tasks {
                     "Class-Path" to configurations.runtimeClasspath.get().joinToString(" ") { it.getName() },
                     "Specification-Version" to 8.0,
                     "Multi-Release" to true,
-                    "Main-Class" to "${project.group}.provider.Main"
+                    "Main-Class" to "${project.properties["group"]!!}.provider.Main"
                 )
             )
         }
@@ -91,11 +91,7 @@ tasks {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-
-            artifact(tasks.named<ShadowJar>("shadowJar").get())
+            shadow.component(this)
         }
     }
 }
