@@ -1,6 +1,6 @@
-package io.github.yuko1101.provider.patch;
+package io.github.lunarcoremods.provider.patch;
 
-import io.github.yuko1101.provider.services.LunarCoreHooks;
+import io.github.lunarcoremods.provider.services.LunarCoreHooks;
 import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.log.Log;

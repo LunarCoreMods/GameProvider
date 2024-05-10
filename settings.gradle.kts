@@ -1,2 +1,2 @@
-rootProject.name = "LunarCoreGameProvider"
+rootProject.name = "GameProvider"
 

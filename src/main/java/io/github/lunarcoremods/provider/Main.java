@@ -1,4 +1,4 @@
-package io.github.yuko1101.provider;
+package io.github.lunarcoremods.provider;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.launch.knot.Knot;

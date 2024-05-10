@@ -1,6 +1,6 @@
-package io.github.yuko1101.provider.services;
+package io.github.lunarcoremods.provider.services;
 
-import io.github.yuko1101.provider.patch.LunarCoreEntrypointPatch;
+import io.github.lunarcoremods.provider.patch.LunarCoreEntrypointPatch;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;

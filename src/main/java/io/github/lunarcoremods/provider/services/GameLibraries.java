@@ -1,4 +1,4 @@
-package io.github.yuko1101.provider.services;
+package io.github.lunarcoremods.provider.services;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.game.LibClassifier;
